@@ -1,6 +1,7 @@
-const { db } = require('../config/firebase');
 const { spawn } = require('child_process');
 const path = require('path');
+const os = require('os');
+const { db } = require('../config/firebase'); // Keep your existing Firebase import, Sensei
 
 // @desc    Start a new assessment
 const startAssessment = async (req, res) => {
@@ -73,69 +74,60 @@ const analyzeAssessment = async (req, res) => {
 
     const assessmentData = doc.data();
     if (!assessmentData.mediaUrl) {
-      return res.status(400).json({ error: 'No video uploaded to analyze yet, Sensei!' });
+      return res.status(400).json({ error: 'No video uploaded to analyze, Sensei!' });
     }
 
-    // 2. Find the physical file on your hard drive, Sensei
+    // 2. Safely find the physical file on your hard drive, Sensei
     const filename = assessmentData.mediaUrl.split('/').pop();
-    const localVideoPath = path.join(__dirname, '..', 'uploads', filename);
+    
+    // 3. Automatically choose 'python' for Windows, and 'python3' for Render/Linux, Sensei!
+    const pythonCommand = os.platform() === 'win32' ? 'python' : 'python3';
 
-    // 3. Spawn the Python process and pass the video path, Sensei!
-    const pythonProcess = spawn('python', ['ai/analyzer.py', localVideoPath]);
+    // 4. Use path.join to build safe paths that work on both Windows and Linux, Sensei!
+    // IMPORTANT: If your python file has a different name, change 'main.py' to match it, Sensei!
+    const scriptPath = path.join(__dirname, '..', 'ai', 'main.py'); 
+    const videoPath = path.join(__dirname, '..', 'uploads', filename);
 
-    let aiOutput = '';
+    console.log(`Starting AI Analysis with command: ${pythonCommand}, Sensei!`);
+    console.log(`Target Video: ${videoPath}, Sensei!`);
 
-    // 4. Listen for the Python script's print() statements, Sensei
-    pythonProcess.stdout.on('data', (data) => {
-      aiOutput += data.toString();
+    // 5. Launch the AI engine, Sensei!
+    const python = spawn(pythonCommand, [scriptPath, videoPath]);
+
+    let aiResult = '';
+
+    // 6. Force any hidden Python errors to print to the Render logs, Sensei!
+    python.stderr.on('data', (data) => {
+      console.error(`PYTHON SYSTEM ERROR, SENSEI: ${data.toString()}`);
     });
 
-    // 5. When Python finishes, update Firebase, Sensei!
-    pythonProcess.on('close', async (code) => {
+    // 7. Capture the success output from Python, Sensei!
+    python.stdout.on('data', (data) => {
+      aiResult += data.toString();
+      console.log(`PYTHON PROGRESS, SENSEI: ${data.toString()}`);
+    });
+
+    // 8. Handle the script finishing, Sensei!
+    python.on('close', async (code) => {
       if (code !== 0) {
-         return res.status(500).json({ error: 'Python AI script crashed, Sensei!' });
+        return res.status(500).json({ error: "Python AI script crashed, Sensei! Check Render logs." });
       }
-
-      const aiResults = JSON.parse(aiOutput);
-
+      
+      // 9. If successful, update the Firestore database with the new data, Sensei!
       await db.collection('assessments').doc(assessmentId).update({
-        status: 'COMPLETED',
-        aiMetrics: aiResults.metrics,
-        analyzedAt: new Date().toISOString(),
+        status: 'completed',
+        aiMetrics: aiResult,
+        completedAt: new Date().toISOString()
       });
 
-      res.status(200).json({ 
-        message: 'AI Analysis complete, Sensei!',
-        metrics: aiResults.metrics
+      return res.status(200).json({ 
+        message: "AI Analysis Complete, Sensei!",
+        result: aiResult
       });
     });
 
   } catch (error) {
-    console.error("AI Bridge Error, Sensei:", error);
-    res.status(500).json({ error: 'Failed to trigger analysis' });
+    console.error("Analysis Error, Sensei:", error);
+    return res.status(500).json({ error: 'Failed to analyze: ' + error.message });
   }
-};
-// @desc    Get assessment record
-const getAssessment = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const doc = await db.collection('assessments').doc(id).get();
-    if (!doc.exists) {
-      return res.status(404).json({ error: 'Assessment not found' });
-    }
-    res.status(200).json({
-      assessmentId: doc.id,
-      ...doc.data()
-    });
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch assessment' });
-  }
-};
-
-// This export block is what prevents line 10 from crashing, Sensei!
-module.exports = {
-  startAssessment,
-  uploadAssessment,
-  analyzeAssessment,
-  getAssessment
 };
