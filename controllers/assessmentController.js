@@ -129,6 +129,11 @@ const analyzeAssessment = async (req, res) => {
   } catch (error) {
     console.error("Analysis Error, Sensei:", error);
     return res.status(500).json({ error: 'Failed to analyze: ' + error.message });
+  } catch (error) {
+    console.error("Analysis Error, Sensei:", error);
+    return res.status(500).json({ error: 'Failed to analyze: ' + error.message });
   }
+}; // This closes the analyzeAssessment function, Sensei!
+
+// This exports everything properly to the router, Sensei!
 module.exports = { startAssessment, uploadAssessment, analyzeAssessment };
-};
