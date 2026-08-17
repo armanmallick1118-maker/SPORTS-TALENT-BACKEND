@@ -130,4 +130,5 @@ const analyzeAssessment = async (req, res) => {
     console.error("Analysis Error, Sensei:", error);
     return res.status(500).json({ error: 'Failed to analyze: ' + error.message });
   }
+module.exports = { startAssessment, uploadAssessment, analyzeAssessment };
 };
