@@ -9,7 +9,7 @@ const {
   getAssessment
 } = require('../controllers/assessmentController');
 
-router.post('/start', verifyToken, startAssessment);
+router.post('/start', startAssessment);
 router.post('/upload', verifyToken, upload.single('video'), uploadAssessment);
 router.post('/analyze', verifyToken, analyzeAssessment);
 router.get('/:id', verifyToken, getAssessment);
