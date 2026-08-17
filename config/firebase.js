@@ -1,26 +1,22 @@
-// config/firebase.js, Sensei
-const { initializeApp, cert } = require('firebase-admin/app');
-const { getFirestore } = require('firebase-admin/firestore');
-const { getAuth } = require('firebase-admin/auth');
-const { getStorage } = require('firebase-admin/storage');
+const admin = require('firebase-admin');
 
-// Your perfectly placed key, Sensei!
-const serviceAccount = require('../firebase-service-account.json');
+let serviceAccount;
 
-const app = initializeApp({
-  credential: cert(serviceAccount),
-  storageBucket: "your-project-id.appspot.com" 
+if (process.env.FIREBASE_SERVICE_ACCOUNT) {
+  try {
+    serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+  } catch (error) {
+    console.error("Failed to parse FIREBASE_SERVICE_ACCOUNT environment variable, Sensei:", error);
+    process.exit(1);
+  }
+} else {
+  serviceAccount = require('../firebase-service-account.json');
+}
+
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount)
 });
 
-const db = getFirestore(app);
-const auth = getAuth(app);
-const storage = getStorage(app);
+const db = admin.firestore();
 
-// We create this small wrapper so your middleware file doesn't break, Sensei!
-const admin = {
-  auth: () => auth,
-  firestore: () => db,
-  storage: () => storage
-};
-
-module.exports = { admin, db, storage, auth };
+module.exports = { admin, db };
