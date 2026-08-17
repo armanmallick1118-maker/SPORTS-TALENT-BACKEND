@@ -1,19 +1,21 @@
-// middleware/auth.js, Sensei
 const { admin } = require('../config/firebase');
 
 const verifyToken = async (req, res, next) => {
-  const token = req.headers.authorization?.split(' ')[1];
-  
-  if (!token) {
-    return res.status(401).json({ error: 'No token provided, Sensei' });
+  const authHeader = req.headers.authorization;
+
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ error: 'No token provided, access denied, Sensei!' });
   }
 
+  const idToken = authHeader.split('Bearer ')[1];
+
   try {
-    const decodedToken = await admin.auth().verifyIdToken(token);
-    req.user = decodedToken;
+    const decodedToken = await admin.auth().verifyIdToken(idToken);
+    req.user = decodedToken; // Secures the route with the real user's ID, Sensei!
     next();
   } catch (error) {
-    res.status(401).json({ error: 'Unauthorized token, Sensei' });
+    console.error("Auth Error, Sensei:", error);
+    return res.status(401).json({ error: 'Invalid or expired token, Sensei!' });
   }
 };
 
