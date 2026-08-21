@@ -1,5 +1,9 @@
 const express = require('express');
+const cors = require('cors');
 const app = express();
+
+// Enable CORS for all origins (Sensei's frontend)
+app.use(cors());
 
 // Middleware to parse incoming JSON data from Flutter, Sensei!
 app.use(express.json());
