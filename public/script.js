@@ -28,33 +28,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 body: JSON.stringify({ email, password })
             });
 
-            // For now, if the endpoint doesn't exist, simulate a response
-            if (response.status === 404) {
-                // Mock success for demonstration
-                await new Promise(resolve => setTimeout(resolve, 1500));
-                
-                if (email === 'admin@sporttalent.io' && password === 'admin123') {
-                    showMessage('Login successful! Redirecting...', 'success');
-                    setTimeout(() => {
-                        alert('This is a demo. The actual dashboard will load here.');
-                        submitBtn.classList.remove('loading');
-                    }, 1000);
-                } else {
-                    showMessage('Invalid credentials. (Hint: admin@sporttalent.io / admin123)', 'error');
-                    submitBtn.classList.remove('loading');
-                }
-                return;
-            }
-
             const data = await response.json();
             
             if (response.ok) {
                 showMessage('Login successful! Redirecting...', 'success');
                 // Store token and redirect
-                // localStorage.setItem('token', data.token);
+                localStorage.setItem('token', data.token);
+                setTimeout(() => {
+                    alert(`Welcome, ${data.user.email}!\n\nThis is a demo. The actual dashboard will load here.`);
+                    submitBtn.classList.remove('loading');
+                }, 1000);
                 // window.location.href = '/dashboard';
             } else {
-                showMessage(data.message || 'Login failed. Please try again.', 'error');
+                showMessage(data.error || data.message || 'Login failed. Please try again.', 'error');
                 submitBtn.classList.remove('loading');
             }
             

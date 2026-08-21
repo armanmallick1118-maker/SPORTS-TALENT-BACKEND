@@ -96,8 +96,7 @@ const analyzeAssessment = async (req, res) => {
     const pythonCommand = os.platform() === 'win32' ? 'python' : 'python3';
 
     // 4. Use path.join to build safe paths that work on both Windows and Linux, Sensei!
-    // IMPORTANT: If your python file has a different name, change 'main.py' to match it, Sensei!
-    const scriptPath = path.join(__dirname, '..', 'ai', 'main.py'); 
+    const scriptPath = path.join(__dirname, '..', 'ai', 'analyzer.py'); 
     const videoPath = path.join(__dirname, '..', 'uploads', filename);
 
     console.log(`Starting AI Analysis with command: ${pythonCommand}, Sensei!`);
