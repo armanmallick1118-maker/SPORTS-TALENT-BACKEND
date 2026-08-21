@@ -1,7 +1,8 @@
 const { spawn } = require('child_process');
 const path = require('path');
 const os = require('os');
-const { db } = require('../config/firebase'); // Keep your existing Firebase import, Sensei
+const { PrismaClient } = require('@prisma/client');
+const prisma = new PrismaClient();
 
 // @desc    Start a new assessment
 const startAssessment = async (req, res) => {
@@ -9,23 +10,30 @@ const startAssessment = async (req, res) => {
     const { sport, testType } = req.body;
     const athleteId = req.user ? req.user.uid : "test-athlete-123";
 
-    const assessmentData = {
-      athleteId: athleteId,
-      sport: sport,
-      testType: testType,
-      status: 'STARTED',
-      startedAt: new Date().toISOString(),
-    };
+    // Create a dummy AssessmentType if it doesn't exist just for the demo
+    let assessmentType = await prisma.assessmentType.findFirst({ where: { name: testType } });
+    if (!assessmentType) {
+      assessmentType = await prisma.assessmentType.create({
+        data: { name: testType || 'Unknown Test', measurement_unit: 'units' }
+      });
+    }
 
-    const docRef = await db.collection('assessments').add(assessmentData);
+    const assessment = await prisma.userAssessment.create({
+      data: {
+        user_id: athleteId,
+        assessment_type_id: assessmentType.id,
+        score: 0,
+        status: 'STARTED',
+      }
+    });
 
     res.status(201).json({
       message: 'Assessment started successfully, Sensei!',
-      assessmentId: docRef.id,
-      ...assessmentData
+      assessmentId: assessment.id,
+      ...assessment
     });
   } catch (error) {
-    res.status(500).json({ error: 'Failed to start assessment' });
+    res.status(500).json({ error: 'Failed to start assessment: ' + error.message });
   }
 };
 
@@ -44,10 +52,12 @@ const uploadAssessment = async (req, res) => {
 
     const mediaUrl = `http://localhost:5000/uploads/${req.file.filename}`;
 
-    await db.collection('assessments').doc(assessmentId).update({
-      status: 'UPLOADED',
-      mediaUrl: mediaUrl,
-      uploadedAt: new Date().toISOString(),
+    await prisma.userAssessment.update({
+      where: { id: assessmentId },
+      data: {
+        status: 'UPLOADED',
+        mediaUrl: mediaUrl,
+      }
     });
 
     res.status(200).json({
@@ -67,12 +77,14 @@ const analyzeAssessment = async (req, res) => {
     const { assessmentId } = req.body;
 
     // 1. Fetch the document to find the video URL, Sensei
-    const doc = await db.collection('assessments').doc(assessmentId).get();
-    if (!doc.exists) {
+    const assessmentData = await prisma.userAssessment.findUnique({
+      where: { id: assessmentId }
+    });
+
+    if (!assessmentData) {
       return res.status(404).json({ error: 'Assessment not found, Sensei!' });
     }
 
-    const assessmentData = doc.data();
     if (!assessmentData.mediaUrl) {
       return res.status(400).json({ error: 'No video uploaded to analyze, Sensei!' });
     }
@@ -113,11 +125,13 @@ const analyzeAssessment = async (req, res) => {
         return res.status(500).json({ error: "Python AI script crashed, Sensei! Check Render logs." });
       }
       
-      // 9. If successful, update the Firestore database with the new data, Sensei!
-      await db.collection('assessments').doc(assessmentId).update({
-        status: 'completed',
-        aiMetrics: aiResult,
-        completedAt: new Date().toISOString()
+      // 9. If successful, update the database with the new data, Sensei!
+      await prisma.userAssessment.update({
+        where: { id: assessmentId },
+        data: {
+          status: 'completed',
+          aiMetrics: aiResult,
+        }
       });
 
       return res.status(200).json({ 

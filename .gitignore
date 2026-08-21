@@ -4,3 +4,4 @@ node_modules/
 firebase-service-account.json
 npm-debug.log*
 .DS_Store
+/generated/prisma

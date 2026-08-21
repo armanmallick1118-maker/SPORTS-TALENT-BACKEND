@@ -1,4 +1,6 @@
-const { admin } = require('../config/firebase');
+const jwt = require('jsonwebtoken');
+
+const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret_key_sensei';
 
 const verifyToken = async (req, res, next) => {
   const authHeader = req.headers.authorization;
@@ -7,11 +9,11 @@ const verifyToken = async (req, res, next) => {
     return res.status(401).json({ error: 'No token provided, access denied, Sensei!' });
   }
 
-  const idToken = authHeader.split('Bearer ')[1];
+  const token = authHeader.split('Bearer ')[1];
 
   try {
-    const decodedToken = await admin.auth().verifyIdToken(idToken);
-    req.user = decodedToken; // Secures the route with the real user's ID, Sensei!
+    const decodedToken = jwt.verify(token, JWT_SECRET);
+    req.user = decodedToken; // Secures the route with the real user's ID from PostgreSQL, Sensei!
     next();
   } catch (error) {
     console.error("Auth Error, Sensei:", error);

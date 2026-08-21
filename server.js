@@ -1,33 +1,33 @@
 const express = require('express');
-const cors = require('cors');
-require('dotenv').config();
-
 const app = express();
 
-// 1. Basic Middleware
-app.use(cors());
+// Mount Routes, Sensei!
+const authRoutes = require('./routes/auth');
+const athleteRoutes = require('./routes/athlete');
+const assessmentRoutes = require('./routes/assessmentRoutes');
+
+app.use('/api/v1/auth', authRoutes);
+app.use('/api/v1/athletes', athleteRoutes);
+app.use('/api/v1/assessments', assessmentRoutes);
+
+// Middleware to parse incoming JSON data from Flutter, Sensei!
 app.use(express.json());
 
-// 2. The Video Vault, Sensei!
-// This exposes your local 'uploads' folder so Pritha's frontend can view the videos via a URL
-app.use('/uploads', express.static('uploads'));
+// Serve static files for the frontend, Sensei!
+const path = require('path');
+app.use(express.static(path.join(__dirname, 'public')));
 
-// 3. API Routes
-// Make sure this points exactly to your assessmentRoutes file!
-app.use('/api/assessment', require('./routes/assessmentRoutes'));
-
-// (If you created auth or athlete routes earlier, uncomment them below, Sensei)
-// app.use('/api/auth', require('./routes/authRoutes'));
-// app.use('/api/athletes', require('./routes/athleteRoutes'));
-
-// 4. Root Health Check
-app.get('/', (req, res) => {
-  res.send('Sports Talent API is running natively and securely, Sensei!');
+// Test route for Pritha to hit, Sensei!
+app.get('/api/ping', (req, res) => {
+  console.log("🟢 PING RECEIVED FROM PRITHA'S FLUTTER APP, SENSEI!");
+  res.status(200).json({ 
+    success: true, 
+    message: "Backend is locked, loaded, and talking to Flutter, Sensei!" 
+  });
 });
 
-// 5. Start the Engine
-const PORT = process.env.PORT || 5000;
-
+// Start the server on port 8000, Sensei!
+const PORT = process.env.PORT || 8000;
 app.listen(PORT, () => {
   console.log(`Server is locked, loaded, and permanently awake on port ${PORT}, Sensei!`);
 });
